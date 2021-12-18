@@ -1,0 +1,31 @@
+node {
+    
+    def mavenHome = tool name: 'maven3.8.4'
+    
+    stage ('checkout') {
+    git credentialsId: 'gitcredentials', url: 'https://github.com/Eleven-Tech-Solutions/maven-web-apps'
+    }
+    stage ('build') {
+    sh "${mavenHome}/bin/mvn clean package"
+    }
+    stage ('codequality') {
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+    }
+    stage ('Upload2nexus') {
+    sh "${mavenHome}/bin/mvn deploy"
+    }
+    stage ('deploy2UAT') {
+    deploy adapters: [tomcat9(credentialsId: 'tomcatcredentials', path: '', url: 'http://15.222.251.196:8080/')], contextPath: null, war: 'target/*.war'
+    }
+    stage ('slack notification') {
+    
+    }
+    stage ('Approval') {
+    timeout(time:8, unit:'HOURS') {
+    input message: 'Please review and approve'    
+    }
+    }
+    stage ('deploy2UAT') {
+    deploy adapters: [tomcat9(credentialsId: 'tomcatcredentials', path: '', url: 'http://15.222.251.196:8080/')], contextPath: null, war: 'target/*.war'
+    }
+}
